@@ -6,10 +6,11 @@ COPY src/ /var/www/html/
 RUN apt-get update && apt-get install -y php-cli
 
 # Copy your initialization script
-COPY init.php /usr/local/bin/
+COPY src/initialize_db.php ./initialize_db.php
 
-# Run the PHP script during image build
-RUN php /usr/local/bin/init.php
+# Run the PHP script to initialize the database
+# (If the database is available at build time, use RUN; otherwise, use CMD)
+RUN php initialize_db.php
 
 EXPOSE 3050
 CMD ["apache2-foreground"]
