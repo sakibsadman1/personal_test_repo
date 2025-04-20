@@ -1,8 +1,5 @@
 <?php
-// Enable output buffering at the very beginning
 ob_start();
-
-session_start();
 require 'db.php';
 
 $error = '';
@@ -21,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match";
     } else {
-        // Check if username already exists
         $query = "SELECT id FROM users WHERE username = ?";
         $stmt = $conn->prepare($query);
         $stmt->bind_param("s", $username);
@@ -31,17 +27,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($result->num_rows > 0) {
             $error = "Username already exists";
         } else {
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $role_id = 2; // Default "User" role
-            
-            $query = "INSERT INTO users (username, password, role_id) VALUES (?, ?, ?)";
+            $query = "SELECT id FROM users WHERE email = ?";
             $stmt = $conn->prepare($query);
-            $stmt->bind_param("ssi", $username, $hashed_password, $role_id);
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
             
-            if ($stmt->execute()) {
-                $success = "Registration successful! You can now login.";
+            if ($result->num_rows > 0) {
+                $error = "Email already exists";
             } else {
-                $error = "Registration failed: " . $conn->error;
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                $role_id = 2;
+                
+                $query = "INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)";
+                $stmt = $conn->prepare($query);
+                $stmt->bind_param("sssi", $username, $email, $hashed_password, $role_id);
+                
+                if ($stmt->execute()) {
+                    $success = "Registration successful! You can now login.";
+                } else {
+                    $error = "Registration failed: " . $conn->error;
+                }
             }
         }
     }
@@ -56,7 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Register</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* General Styles */
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -69,7 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #333;
         }
 
-        /* Register Container */
         .register-container {
             background: #fff;
             padding: 30px;
@@ -87,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #444;
         }
 
-        /* Form Styles */
         .form-group {
             margin-bottom: 20px;
             text-align: left;
@@ -121,7 +124,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
         }
 
-        /* Button */
         .register-container button {
             width: 100%;
             padding: 12px;
@@ -140,7 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #5a6fd1;
         }
 
-        /* Links */
         .login-link {
             margin-top: 20px;
             font-size: 14px;
@@ -157,7 +158,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             text-decoration: underline;
         }
 
-        /* Messages */
         .message {
             padding: 10px;
             margin-bottom: 20px;
@@ -180,7 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: 1px solid #c3e6cb;
         }
 
-        /* Logo/Brand Area */
         .brand {
             margin-bottom: 30px;
         }
@@ -209,8 +208,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="register-container">
         <div class="brand">
-            <div class="brand-logo">CB</div>
-            <div class="brand-name">Chat Bot</div>
+            <div class="brand-logo">CA</div>
+            <div class="brand-name">Chat Application</div>
         </div>
         
         <h2>Register</h2>
@@ -252,7 +251,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <script>
-        // Function to handle message fadeout
         function hideMessages() {
             const messages = document.querySelectorAll('.message');
             if (messages.length > 0) {
@@ -264,16 +262,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             message.style.display = 'none';
                         }, 500);
                     });
-                }, 5000); // 5 seconds
+                }, 5000);
             }
         }
 
-        // Call the function when page loads
         document.addEventListener('DOMContentLoaded', hideMessages);
     </script>
 </body>
 </html>
 <?php
-// End output buffering and send content
 ob_end_flush();
 ?>

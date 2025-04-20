@@ -2,7 +2,12 @@
 session_start();
 require 'db.php';
 
-// Check if user is logged in
+if (isset($_POST['guest_login'])) {
+    $_SESSION['user_id'] = 'guest';
+    $_SESSION['role_id'] = 3; // Assuming 3 is your guest role ID
+}
+
+// Regular authentication check
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -418,10 +423,10 @@ if ($role === 'Admin') {
         <div class="admin-section">
             <h2>Admin Dashboard</h2>
             <div class="stats">
-            <div class="stat-card clickable" onclick="showUsersTable()">
+                <div class="stat-card">
                 <div class="number"><?php echo $total_users; ?></div>
                 <div class="label">Total Users</div>
-            </div>
+                </div>
                 <div class="stat-card">
                     <div class="number">3</div>
                     <div class="label">User Roles</div>
