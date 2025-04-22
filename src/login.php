@@ -23,34 +23,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($username) || empty($password)) {
         $error = "Username and password are required";
     } else {
-        $query = "SELECT id, password, role_id FROM users WHERE username = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        if ($result->num_rows === 1) {
-            $user = $result->fetch_assoc();
+        $query = "SELECT id, password, role_id FROM user_management.users WHERE username = :username";
+        try {
+            $stmt = query_safe($conn, $query, ['username' => $username]);
             
-            $debug_info .= "User found in database. ID: " . $user['id'] . ", Role ID: " . $user['role_id'] . "<br>";
+            $debug_info .= "Query executed successfully.<br>";
             
-            if (password_verify($password, $user['password'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['role_id'] = $user['role_id'];
+            if ($stmt->rowCount() === 1) {
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                $debug_info .= "Password verified. Session variables set.<br>";
-                $debug_info .= "SESSION['user_id']: " . $_SESSION['user_id'] . "<br>";
-                $debug_info .= "SESSION['role_id']: " . $_SESSION['role_id'] . "<br>";
+                $debug_info .= "User found in database. ID: " . $user['id'] . ", Role ID: " . $user['role_id'] . "<br>";
                 
-                header("Location: dashboard.php");
-                exit;
+                if (password_verify($password, $user['password'])) {
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['role_id'] = $user['role_id'];
+                    
+                    $debug_info .= "Password verified. Session variables set.<br>";
+                    $debug_info .= "SESSION['user_id']: " . $_SESSION['user_id'] . "<br>";
+                    $debug_info .= "SESSION['role_id']: " . $_SESSION['role_id'] . "<br>";
+                    
+                    header("Location: dashboard.php");
+                    exit;
+                } else {
+                    $error = "Invalid username or password";
+                    $debug_info .= "Password verification failed.<br>";
+                }
             } else {
                 $error = "Invalid username or password";
-                $debug_info .= "Password verification failed.<br>";
+                $debug_info .= "User not found in database.<br>";
             }
-        } else {
-            $error = "Invalid username or password";
-            $debug_info .= "User not found in database.<br>";
+        } catch (PDOException $e) {
+            $error = "Login error";
+            $debug_info .= "Database error: " . $e->getMessage() . "<br>";
         }
     }
 }

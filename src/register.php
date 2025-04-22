@@ -18,35 +18,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match";
     } else {
-        $query = "SELECT id FROM users WHERE username = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        // Check if username exists using PDO prepared statement
+        $query = "SELECT id FROM user_management.users WHERE username = :username";
+        $stmt = query_safe($conn, $query, ['username' => $username]);
         
-        if ($result->num_rows > 0) {
+        if ($stmt->rowCount() > 0) {
             $error = "Username already exists";
         } else {
-            $query = "SELECT id FROM users WHERE email = ?";
-            $stmt = $conn->prepare($query);
-            $stmt->bind_param("s", $email);
-            $stmt->execute();
-            $result = $stmt->get_result();
+            // Check if email exists using PDO prepared statement
+            $query = "SELECT id FROM user_management.users WHERE email = :email";
+            $stmt = query_safe($conn, $query, ['email' => $email]);
             
-            if ($result->num_rows > 0) {
+            if ($stmt->rowCount() > 0) {
                 $error = "Email already exists";
             } else {
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                $role_id = 2;
+                $role_id = 2; // Default role is 'User'
                 
-                $query = "INSERT INTO users (username, email, password, role_id) VALUES (?, ?, ?, ?)";
-                $stmt = $conn->prepare($query);
-                $stmt->bind_param("sssi", $username, $email, $hashed_password, $role_id);
-                
-                if ($stmt->execute()) {
+                // Insert new user using PDO prepared statement
+                $query = "INSERT INTO user_management.users (username, email, password, role_id) VALUES (:username, :email, :password, :role_id)";
+                try {
+                    $params = [
+                        'username' => $username,
+                        'email' => $email,
+                        'password' => $hashed_password,
+                        'role_id' => $role_id
+                    ];
+                    
+                    $stmt = query_safe($conn, $query, $params);
                     $success = "Registration successful! You can now login.";
-                } else {
-                    $error = "Registration failed: " . $conn->error;
+                } catch (PDOException $e) {
+                    $error = "Registration failed: " . $e->getMessage();
                 }
             }
         }

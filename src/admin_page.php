@@ -13,46 +13,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (empty($user_id) || empty($username) || empty($email) || empty($role_id)) {
         $error = "All fields are required";
     } else {
-        // Update user in database
-        $query = "UPDATE users SET username = ?, email = ?, role_id = ? WHERE id = ?";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("ssii", $username, $email, $role_id, $user_id);
-        
-        if ($stmt->execute()) {
+        try {
+            // Update user in database using prepared statement
+            $query = "UPDATE user_management.users SET username = ?, email = ?, role_id = ? WHERE id = ?";
+            $params = [$username, $email, $role_id, $user_id];
+            $stmt = query_safe($conn, $query, $params);
             $success = "User updated successfully!";
-        } else {
-            $error = "Failed to update user: " . $conn->error;
+        } catch (PDOException $e) {
+            $error = "Failed to update user: " . $e->getMessage();
         }
     }
 }
 
 function getRoles($conn) {
-    $query = "SELECT id, role_name FROM roles";
-    $result = $conn->query($query);
-    
-    $roles = [];
-    if ($result && $result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $roles[] = $row;
-        }
+    try {
+        $query = "SELECT id, role_name FROM user_management.roles";
+        $stmt = query_safe($conn, $query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error fetching roles: " . $e->getMessage());
+        return [];
     }
-    return $roles;
 }
 
 function getUsers($conn) {
-    // Updated query to include the email field from the database
-    $query = "SELECT users.id, users.username, users.email, users.role_id, roles.role_name 
-              FROM users 
-              JOIN roles ON users.role_id = roles.id";
-    $result = $conn->query($query);
-    
-    $users = [];
-    if ($result && $result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $users[] = $row;
-        }
+    try {
+        // Updated query to include the email field from the database
+        $query = "SELECT u.id, u.username, u.email, u.role_id, r.role_name 
+                FROM user_management.users u
+                JOIN user_management.roles r ON u.role_id = r.id";
+        $stmt = query_safe($conn, $query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error fetching users: " . $e->getMessage());
+        return [];
     }
-    return $users;
 }
 
 $users = getUsers($conn);
@@ -258,33 +253,6 @@ echo "Welcome, Admin! You have access to manage users.";
             <div class="message success"><?php echo $success; ?></div>
         <?php endif; ?>
         
-        <!-- <section id="users">
-            <h2>Users List</h2>
-            <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-                <?php if (count($users) > 0): ?>
-                    <?php foreach ($users as $user): ?>
-                        <tr>
-                            <td><?php echo $user['id']; ?></td>
-                            <td><?php echo htmlspecialchars($user['username']); ?></td>
-                            <td><?php echo htmlspecialchars($user['email']); ?></td>
-                            <td>Active</td>
-                            <td><button onclick="openPopup(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>', '<?php echo htmlspecialchars($user['email']); ?>', <?php echo $user['role_id']; ?>)">Manage</button></td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="5">No users found</td>
-                    </tr>
-                <?php endif; ?>
-            </table>
-        </section> -->
         <section id="account">
             <h2>Account Management</h2>
             <table>
@@ -302,7 +270,7 @@ echo "Welcome, Admin! You have access to manage users.";
                             <td><?php echo htmlspecialchars($user['username']); ?></td>
                             <td><?php echo htmlspecialchars($user['email']); ?></td>
                             <td><?php echo htmlspecialchars($user['role_name']); ?></td>
-                            <td><button class="edit-btn" onclick="openPopup(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars($user['username']); ?>', '<?php echo htmlspecialchars($user['email']); ?>', <?php echo $user['role_id']; ?>)">Edit</button></td>
+                            <td><button class="edit-btn" onclick="openPopup(<?php echo $user['id']; ?>, '<?php echo htmlspecialchars(addslashes($user['username'])); ?>', '<?php echo htmlspecialchars(addslashes($user['email'])); ?>', <?php echo $user['role_id']; ?>)">Edit</button></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php else: ?>
