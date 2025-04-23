@@ -1,22 +1,28 @@
-FROM php:8.1-apache
+FROM php:8.2-apache
 
-# Install PostgreSQL extensions for Supabase (which is based on PostgreSQL)
-RUN apt-get update && apt-get install -y libpq-dev \
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
     && docker-php-ext-install pdo pdo_pgsql
 
-# Copy application source code
+RUN a2enmod rewrite
+
+WORKDIR /var/www/html
+
 COPY src/ /var/www/html/
 
-# # Create an entrypoint script
-# RUN echo '#!/bin/bash\n\
-# # Run the database initialization script\n\
-# php /var/www/html/initialize_db.php\n\
-# \n\
-# # Start Apache in foreground\n\
-# apache2-foreground' > /usr/local/bin/docker-entrypoint.sh \
-#     && chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY db.sql /docker-entrypoint-initdb.d/
+
+RUN chown -R www-data:www-data /var/www/html
+
+RUN echo '<Directory /var/www/html>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+    DirectoryIndex login.php index.php\n\
+</Directory>' > /etc/apache2/conf-available/default-directory-config.conf
+
+RUN a2enconf default-directory-config
 
 EXPOSE 3050
 
-# Use our custom entrypoint script
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
