@@ -7,14 +7,14 @@ RUN apt-get update && apt-get install -y libpq-dev \
 # Copy application source code
 COPY src/ /var/www/html/
 
-# Create an entrypoint script
-RUN echo '#!/bin/bash\n\
-# Run the database initialization script\n\
-php /var/www/html/initialize_db.php\n\
-\n\
-# Start Apache in foreground\n\
-apache2-foreground' > /usr/local/bin/docker-entrypoint.sh \
-    && chmod +x /usr/local/bin/docker-entrypoint.sh
+# # Create an entrypoint script
+# RUN echo '#!/bin/bash\n\
+# # Run the database initialization script\n\
+# php /var/www/html/initialize_db.php\n\
+# \n\
+# # Start Apache in foreground\n\
+# apache2-foreground' > /usr/local/bin/docker-entrypoint.sh \
+#     && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3050
 
