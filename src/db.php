@@ -1,23 +1,17 @@
 <?php
-$host = "db";
-$username = "user";
-$password = "password";
-$dbname = "user_management";
-$port = 5432;
+$host = getenv('DB_HOST') ?: 'db.uqvnvcqplqxxyuibjdxt.supabase.co';
+$port = getenv('DB_PORT') ?: '5432';
+$dbname = getenv('DB_NAME') ?: 'postgres';
+$user = getenv('DB_USER') ?: 'postgres';
+$password = getenv('DB_PASSWORD') ?: 'w4wCUNQZmqZif5vl';
 
-$conn = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $username, $password);
-$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
 
-// try {
-//     $conn = new PDO("pgsql:host=$host;port=$port;dbname=$dbname", $username, $password);
-//     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-// } catch (PDOException $e) {
-//     die("Connection failed: " . $e->getMessage());
-// }
-
-function query_safe($conn, $query, $params = []) {
-    $stmt = $conn->prepare($query);
-    $stmt->execute($params);
-    return $stmt;
+try {
+    $pdo = new PDO($dsn, $user, $password);
+    // Optional: set error mode to exceptions
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 ?>
